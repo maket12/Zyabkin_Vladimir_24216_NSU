@@ -1,8 +1,6 @@
 f :: Double -> Double
 f x = (x + 2) * 8
 
-
-
 func :: (Double -> Double) -> Double -> Double
 func f p = max (exp p) (f p) 
 
