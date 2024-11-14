@@ -1,0 +1,148 @@
+module Matrix where
+
+import Data.Array
+
+newtype Matrix = Matrix (Array (Int, Int) Double)
+
+
+makeMatrix :: (Int, Int) -> [((Int, Int), Double)] -> Matrix
+makeMatrix size values = Matrix (array ((0, 0), (fst size - 1, snd size - 1)) values)
+
+(!!!) :: Matrix -> (Int, Int) -> Double
+(!!!) (Matrix m) cors = m ! cors
+
+matrixSize :: Matrix -> (Int, Int)
+matrixSize (Matrix m) = increment (snd (bounds m)) -- need to increment, because the coords start on (0, 0)
+                        where
+                            increment :: (Int, Int) -> (Int, Int)
+                            increment (x, y) = (x + 1, y + 1)
+
+matrixIndices :: Matrix -> [(Int, Int)]
+matrixIndices (Matrix m) = indices m
+
+
+type MtxElem = ((Int, Int), Double)
+
+
+matrixFold :: (b -> MtxElem -> b) -> b -> Matrix -> b
+matrixFold condtion value (Matrix mtx) = foldl condtion value (assocs mtx)
+
+-- matrixSumElems :: Matrix -> Double
+-- matrixSumElems mtx = matrixFold (\acc (_, e) -> acc + e) 0 mtx
+
+matrixMap :: (MtxElem -> Double) -> Matrix -> Matrix
+matrixMap condition (Matrix mtx) = Matrix (array (bounds mtx) [(idx, condition (idx, val)) | (idx, val) <- assocs mtx])
+
+-- Пример использования:
+-- matrixMulScalar :: Double -> Matrix -> Matrix
+-- matrixMulScalar x mtx = matrixMap (\(_, e) -> x * e) mtx
+
+instance Show Matrix where
+    show :: Matrix -> String
+    show mtx = unlines [unwords [show (mtx !!! (i, j)) | j <- [0 .. cols - 1]] | i <- [0 .. rows - 1]]
+        where
+            (rows, cols) = matrixSize mtx
+
+
+transpose :: Matrix -> Matrix
+transpose (Matrix mtx) = Matrix (array newBounds transposedElems)
+  where
+    ((minRow, minCol), (maxRow, maxCol)) = bounds mtx
+    newBounds = ((minCol, minRow), (maxCol, maxRow))
+    transposedElems = [((j, i), val) | ((i, j), val) <- assocs mtx]
+
+
+instance Eq Matrix where
+    (Matrix mtx1) == (Matrix mtx2) = 
+        matrixSize (Matrix mtx1) == matrixSize (Matrix mtx2) && all(\((i, j), val) -> mtx1 ! (i, j) == val)(assocs mtx2)
+
+instance Num Matrix where
+    -- Сложение двух матриц
+    (+) :: Matrix -> Matrix -> Matrix
+    (+) (Matrix mtx1) (Matrix mtx2)
+        | matrixSize (Matrix mtx1) /= matrixSize (Matrix mtx2) = error "Wrong data"
+        | otherwise = Matrix (array (bounds mtx1) [(idx, mtx1 ! idx + mtx2 ! idx) | idx <- indices mtx1])
+
+    -- Умножение двух матриц
+    (*) :: Matrix -> Matrix -> Matrix
+    (*) (Matrix mtx1) (Matrix mtx2)
+        | snd (matrixSize (Matrix mtx1)) /= fst (matrixSize (Matrix mtx2)) = error "Wrong data"
+        | otherwise = Matrix (array ((0, 0), (rows1 - 1, cols2 - 1))
+            [((i, j), sum [mtx1 ! (i, k) * mtx2 ! (k, j) | k <- [0 .. cols1 - 1]]) 
+             | i <- [0 .. rows1 - 1], j <- [0 .. cols2 - 1]])
+        where
+            (rows1, cols1) = matrixSize (Matrix mtx1)
+            (rows2, cols2) = matrixSize (Matrix mtx2)
+
+    -- negate: изменить знак всех элементов матрицы
+    negate :: Matrix -> Matrix
+    negate (Matrix mtx) = Matrix (array (bounds mtx) [(idx, -val) | (idx, val) <- assocs mtx])
+
+    -- abs: матрица абсолютных значений
+    abs :: Matrix -> Matrix
+    abs (Matrix mtx) = Matrix (array (bounds mtx) [(idx, abs val) | (idx, val) <- assocs mtx])
+
+    -- signum: матрица знаков
+    signum :: Matrix -> Matrix
+    signum (Matrix mtx) = Matrix (array (bounds mtx) [(idx, signum val) | (idx, val) <- assocs mtx])
+
+    -- fromInteger: создать матрицу из заданного числа
+    fromInteger :: Integer -> Matrix
+    fromInteger x = Matrix (array ((0, 0), (0, 0)) [((0, 0), fromInteger x)])
+
+
+det2 :: Matrix -> Double
+det2 mtx
+    | matrixSize mtx /= (2, 2) = error "Matrix must be of size 2x2"
+    | otherwise = a * d - b * c
+    where
+        a = mtx !!! (0, 0)
+        b = mtx !!! (0, 1)
+        c = mtx !!! (1, 0)
+        d = mtx !!! (1, 1)
+
+det3 :: Matrix -> Double
+det3 mtx
+    | matrixSize mtx /= (3, 3) = error "Matrix must be of size 3x3"
+    | otherwise = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
+    where
+        a = mtx !!! (0, 0)
+        b = mtx !!! (0, 1)
+        c = mtx !!! (0, 2)
+        d = mtx !!! (1, 0)
+        e = mtx !!! (1, 1)
+        f = mtx !!! (1, 2)
+        g = mtx !!! (2, 0)
+        h = mtx !!! (2, 1)
+        i = mtx !!! (2, 2)
+
+
+isDiagonal :: Matrix -> Bool
+isDiagonal mtx
+    | rows /= cols = error "Matrix must be square"
+    | otherwise = all (\(i, j) -> if i /= j then mtx !!! (i, j) == 0 else True) (matrixIndices mtx)
+    where
+        (rows, cols) = matrixSize mtx
+
+
+isSymmetrical :: Matrix -> Bool
+isSymmetrical mtx
+    | rows /= cols = error "Matrix must be square"
+    | otherwise = all (\(i, j) -> mtx !!! (i, j) == mtx !!! (j, i)) (matrixIndices mtx)
+    where
+        (rows, cols) = matrixSize mtx
+
+
+-- use it for tests only
+
+example1 :: [((Int, Int), Double)]
+example1 = [((0,0),  1), ((0,1), -2), ((0,2), 3),
+            ((1,0),  4), ((1,1),  0), ((1,2), 6),
+          ((2,0), -7), ((2,1),  8), ((2,2), 9)]
+
+example2 :: [((Int, Int), Double)]
+example2 = [((0,0), 13), ((0,1),  0),
+            ((1,0), 0 ), ((1,1), 12)]
+
+m1 = makeMatrix (3, 3) example1 -- m1 :: Matrix
+m2 = makeMatrix (2, 2) example2 -- m2 :: Matrix
