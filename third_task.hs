@@ -32,10 +32,11 @@ checkAllEq x | null x = True
 -- checkAllEq [1, 1, 1] --> True
 -- checkAllEq [1, 2] --> False
 
+import Data.List (tails)
+
 findMin :: [(Double, Double)] -> Double
 findMin [] = 0
-findMin [_] = 1 / 0
-findMin (x:y:xs) = min (distance x y) (findMin (y:xs))
+findMin points = minimum [distance p1 p2 | p1:ps <- tails points, p2 <- ps]
 
 -- findMin [(1, 1), (4, 5), (6, 8), (1, 3)] --> 3.605551275463989
 
