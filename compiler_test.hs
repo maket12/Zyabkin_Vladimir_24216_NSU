@@ -7,7 +7,7 @@ import Data.Maybe (fromJust)
 alph :: String
 alph = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9']
 
--- Функция для шифрования одного символа
+
 encryptChar :: Char -> Char -> Char
 encryptChar char keyChar
     | char `elem` alph = alph !! ((charIndex + keyIndex) `mod` length alph)
@@ -16,7 +16,7 @@ encryptChar char keyChar
     charIndex = fromJust (elemIndex char alph)
     keyIndex = fromJust (elemIndex keyChar alph)
 
--- Функция для дешифрования одного символа
+
 decryptChar :: Char -> Char -> Char
 decryptChar char keyChar
     | char `elem` alph = alph !! ((charIndex - keyIndex + length alph) `mod` length alph)
@@ -25,7 +25,7 @@ decryptChar char keyChar
     charIndex = fromJust (elemIndex char alph)
     keyIndex = fromJust (elemIndex keyChar alph)
 
--- Общая функция для обработки текста
+
 processText :: (Char -> Char -> Char) -> String -> String -> String
 processText func text key = zipWith func text (cycle key)
 
