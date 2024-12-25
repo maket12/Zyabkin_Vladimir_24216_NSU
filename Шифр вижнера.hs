@@ -68,5 +68,5 @@ decode key path = do
 
 main :: IO()
 main = do
-    putStrLn "Goodies"
-    main2  -- Вызов функции main2 для выполнения основного функционала
+    -- putStrLn "Goodies"
+    main2
